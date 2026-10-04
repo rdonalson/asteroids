@@ -1,0 +1,5 @@
+# Front-end overrides. Dear ImGui's text API (ImGui::Text etc.) is printf-style
+# by design, so the "no C-style varargs" rule is disabled for this folder only.
+InheritParentConfig: true
+Checks: >
+  -cppcoreguidelines-pro-type-vararg

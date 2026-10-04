@@ -1,0 +1,69 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "windows-msvc-debug",
+      "displayName": "Windows MSVC Debug",
+      "inherits": "base",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CMAKE_CXX_COMPILER": "cl" },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+      "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": ["Windows"] } }
+    },
+    {
+      "name": "windows-msvc-release",
+      "displayName": "Windows MSVC Release",
+      "inherits": "windows-msvc-debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "linux-gcc-debug",
+      "displayName": "Linux GCC Debug (WSL, full game)",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CMAKE_CXX_COMPILER": "g++" },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+    },
+    {
+      "name": "linux-gcc-release-core",
+      "displayName": "Linux GCC Release (core, tests, benchmark only)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "g++",
+        "ASTEROIDS_BUILD_GAME": "OFF"
+      },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+    },
+    {
+      "name": "linux-clang-asan",
+      "displayName": "Linux Clang + Sanitizers (core and tests)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "ASTEROIDS_BUILD_GAME": "OFF",
+        "ASTEROIDS_ENABLE_ASAN": "ON"
+      },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "windows-msvc-debug",     "configurePreset": "windows-msvc-debug" },
+    { "name": "windows-msvc-release",   "configurePreset": "windows-msvc-release" },
+    { "name": "linux-gcc-debug",        "configurePreset": "linux-gcc-debug" },
+    { "name": "linux-gcc-release-core", "configurePreset": "linux-gcc-release-core" },
+    { "name": "linux-clang-asan",       "configurePreset": "linux-clang-asan" }
+  ],
+  "testPresets": [
+    { "name": "windows-msvc-debug",     "configurePreset": "windows-msvc-debug",     "output": { "outputOnFailure": true } },
+    { "name": "linux-gcc-debug",        "configurePreset": "linux-gcc-debug",        "output": { "outputOnFailure": true } },
+    { "name": "linux-gcc-release-core", "configurePreset": "linux-gcc-release-core", "output": { "outputOnFailure": true } },
+    { "name": "linux-clang-asan",       "configurePreset": "linux-clang-asan",       "output": { "outputOnFailure": true } }
+  ]
+}

@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            preset: windows-msvc-debug       # full game + tests
+          - os: ubuntu-latest
+            preset: linux-gcc-debug          # full game + tests
+          - os: ubuntu-latest
+            preset: linux-clang-asan         # core + tests under sanitizers
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.preset }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libxrandr-dev libxcursor-dev libxi-dev \
+            libudev-dev libgl1-mesa-dev libfreetype-dev
+
+      - name: Set up MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }}
+
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - run: cmake --preset linux-gcc-release-core -DASTEROIDS_BUILD_TESTS=OFF
+      - run: cmake --build --preset linux-gcc-release-core
+      - name: Run collision benchmark (fails if grid and brute force disagree)
+        run: ./build/linux-gcc-release-core/collision_bench
+
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check clang-format
+        run: |
+          find include src app tests bench -name '*.hpp' -o -name '*.cpp' \
+            | xargs clang-format --dry-run --Werror
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build clang-tidy
+      - run: cmake --preset linux-gcc-release-core
+      - name: Run clang-tidy
+        run: clang-tidy -p build/linux-gcc-release-core src/*.cpp bench/*.cpp --warnings-as-errors='*'
